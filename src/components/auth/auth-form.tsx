@@ -48,13 +48,17 @@ export function AuthForm() {
             const nameFromEmail = values.email.split('@')[0];
             updateProfile(nameFromEmail, values.email, "Product Designer & Developer");
           }
-        } catch (error: any) {
-          const errorMessage = error?.message || "";
+        } catch (error) {
+          const errorMessage = String(error);
           if (errorMessage.includes("Account") && errorMessage.includes("already exists")) {
             toast.success("Account already exists. Logging you in...");
-            await forceResetPassword({ email: values.email, password: values.password });
-            await signIn("password", { ...values, flow: "signIn" });
-            setIsSignUp(false);
+            try {
+              await forceResetPassword({ email: values.email, password: values.password });
+              await signIn("password", { ...values, flow: "signIn" });
+              setIsSignUp(false);
+            } catch (resetError) {
+              throw error;
+            }
           } else {
             throw error;
           }
@@ -65,26 +69,28 @@ export function AuthForm() {
           // Update email in profile on successful login
           // We don't have the name from backend (no backend profile), so we keep existing or update email
           // For this task, we can just assume the local profile is correct or update email
-        } catch (error: any) {
+        } catch (error) {
           // Check for specific error string from Convex Auth or generic error
-          // The error message for invalid credentials might vary, but "InvalidAccountId" is common for non-existent users
-          const errorMessage = error?.message || "";
+          const errorMessage = String(error);
           const isInvalidAccount =
             errorMessage.includes("InvalidAccountId") || errorMessage.includes("not found");
-          const isInvalidSecret =
-            errorMessage.includes("InvalidSecret") ||
-            errorMessage.includes("Invalid credentials");
+
           if (isInvalidAccount) {
             // Auto-create account
             toast.success("Account not found, creating new one...");
             await signIn("password", { ...values, flow: "signUp" });
             const nameFromEmail = values.email.split('@')[0];
             updateProfile(nameFromEmail, values.email, "Product Designer & Developer");
-          } else if (isInvalidSecret) {
-            await forceResetPassword({ email: values.email, password: values.password });
-            await signIn("password", { ...values, flow: "signIn" });
           } else {
-            throw error;
+            // Assume InvalidSecret or generic error -> Try Reset + Retry
+            try {
+              await forceResetPassword({ email: values.email, password: values.password });
+              await signIn("password", { ...values, flow: "signIn" });
+              toast.success("Password reset and logged in");
+            } catch (resetError) {
+              // Only show error if reset+retry fails
+              throw error;
+            }
           }
         }
       }

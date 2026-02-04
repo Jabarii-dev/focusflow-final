@@ -160,6 +160,10 @@ export type TranslationKey =
   | 'detectedInterruptions'
   | 'totalTimeLost'
   | 'avgDailyLoss'
+  | 'summaryLastDays'
+  | 'projectedAnnualLoss'
+  | 'perDayCost'
+  | 'youWereAway'
   // Notifications
   | 'stayUpdated'
   | 'markAllRead'
@@ -358,6 +362,10 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     detectedInterruptions: 'Detected interruptions (Last 7 days)',
     totalTimeLost: 'Total time lost (Last 7 days)',
     avgDailyLoss: 'Avg Daily Loss',
+    summaryLastDays: 'Summary of the last {days} days',
+    projectedAnnualLoss: 'Projected Annual Loss',
+    perDayCost: 'Cost per day',
+    youWereAway: 'You were away',
     stayUpdated: 'Stay updated on your productivity and tasks.',
     markAllRead: 'Mark all as read',
     all: 'All',
@@ -551,6 +559,10 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     detectedInterruptions: 'Interruptions détectées (7 derniers jours)',
     totalTimeLost: 'Temps total perdu (7 derniers jours)',
     avgDailyLoss: 'Perte quotidienne moy',
+    summaryLastDays: 'Résumé des {days} derniers jours',
+    projectedAnnualLoss: 'Perte annuelle projetée',
+    perDayCost: 'Coût par jour',
+    youWereAway: 'Vous étiez absent',
     stayUpdated: 'Restez informé de votre productivité et de vos tâches.',
     markAllRead: 'Tout marquer comme lu',
     all: 'Tout',
@@ -744,6 +756,10 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     detectedInterruptions: 'Interrupciones detectadas (Últimos 7 días)',
     totalTimeLost: 'Tiempo total perdido (Últimos 7 días)',
     avgDailyLoss: 'Pérdida diaria prom',
+    summaryLastDays: 'Resumen de los últimos {days} días',
+    projectedAnnualLoss: 'Pérdida anual proyectada',
+    perDayCost: 'Costo por día',
+    youWereAway: 'Estuviste ausente',
     stayUpdated: 'Mantente actualizado sobre tu productividad y tareas.',
     markAllRead: 'Marcar todo como leído',
     all: 'Todo',
@@ -937,6 +953,10 @@ export const translations: Record<LanguageCode, Record<TranslationKey, string>> 
     detectedInterruptions: 'Katsewa da aka gano (Kwanaki 7 na ƙarshe)',
     totalTimeLost: 'Jimlar lokacin da aka rasa (Kwanaki 7 na ƙarshe)',
     avgDailyLoss: 'Matsakaicin Asarar Kullum',
+    summaryLastDays: 'Takaitaccen kwanaki {days} da suka gabata',
+    projectedAnnualLoss: 'Kiyasin Asarar Shekara',
+    perDayCost: 'Kudin kowace rana',
+    youWereAway: 'Ba ka nan',
     stayUpdated: 'Kasance da labarin yawan aiki da ayyukan ku.',
     markAllRead: 'Yi alama duka a matsayin an karanta',
     all: 'Duka',
