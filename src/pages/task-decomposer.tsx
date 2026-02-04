@@ -22,6 +22,7 @@ import {
   Zap,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/hooks/use-i18n"
 
 interface Step {
   id: string
@@ -51,6 +52,7 @@ type DecomposeResponseStep = {
 }
 
 function TaskDecomposerContent() {
+  const { t } = useI18n()
   const decomposeTask = useAction(api.taskDecomposer.decomposeTask)
   const [taskName, setTaskName] = useState("")
   const [chunkMinutes, setChunkMinutes] = useState("6")
@@ -201,9 +203,9 @@ function TaskDecomposerContent() {
               <Layers className="size-5 text-purple-400" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-foreground">Task Decomposer</h1>
+              <h1 className="text-xl font-bold tracking-tight text-foreground">{t('taskDecomposer')}</h1>
               <p className="text-xs text-muted-foreground">
-                Transform overwhelming projects into manageable micro-steps.
+                {t('transformTasks')}
               </p>
             </div>
           </div>
@@ -215,9 +217,9 @@ function TaskDecomposerContent() {
             {/* Input Section */}
             <Card className="bg-background/40 backdrop-blur-md border-white/10 shadow-lg">
               <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="text-base">What needs to be done?</CardTitle>
+                <CardTitle className="text-base">{t('whatNeedsDone')}</CardTitle>
                 <CardDescription className="text-xs">
-                  Enter a complex task and fine-tune the timeboxing details.
+                  {t('enterTaskDetails')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-4 pb-4">
@@ -244,12 +246,12 @@ function TaskDecomposerContent() {
                       {isGenerating ? (
                         <>
                           <Sparkles className="mr-2 size-3 animate-spin" />
-                          Decomposing...
+                          {t('decomposing')}
                         </>
                       ) : (
                         <>
                           <Sparkles className="mr-2 size-3" />
-                          Generate Steps
+                          {t('generateSteps')}
                         </>
                       )}
                     </Button>
@@ -257,7 +259,7 @@ function TaskDecomposerContent() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <p className="text-[10px] text-muted-foreground">Chunk size (minutes)</p>
+                      <p className="text-[10px] text-muted-foreground">{t('chunkSize')}</p>
                       <Input
                         type="number"
                         min={1}
@@ -267,7 +269,7 @@ function TaskDecomposerContent() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] text-muted-foreground">Time available (optional)</p>
+                      <p className="text-[10px] text-muted-foreground">{t('timeAvailable')}</p>
                       <Input
                         placeholder="e.g. 2 hours this afternoon"
                         value={timeAvailable}
@@ -278,7 +280,7 @@ function TaskDecomposerContent() {
                   </div>
 
                   <div className="space-y-1">
-                    <p className="text-[10px] text-muted-foreground">Extra context (optional)</p>
+                    <p className="text-[10px] text-muted-foreground">{t('extraContext')}</p>
                     <Textarea
                       placeholder="e.g. Focus on the executive summary and charts"
                       value={context}
@@ -326,14 +328,14 @@ function TaskDecomposerContent() {
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2 text-base">
                         <BrainCircuit className="size-4 text-purple-500" />
-                        Action Plan
+                        {t('actionPlan')}
                       </CardTitle>
                       {hasGenerated && totalTimeLabel && (
                         <Badge
                           variant="secondary"
                           className="bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 text-[10px] px-2 py-0.5"
                         >
-                          Total Time: ~{totalTimeLabel}
+                          {t('totalTime')}: ~{totalTimeLabel}
                         </Badge>
                       )}
                     </div>
@@ -346,9 +348,9 @@ function TaskDecomposerContent() {
                           <Sparkles className="size-8 text-purple-500 animate-bounce relative z-10" />
                         </div>
                         <div className="space-y-0.5">
-                          <h3 className="text-sm font-medium">Analyzing Complexity</h3>
+                          <h3 className="text-sm font-medium">{t('analyzingComplexity')}</h3>
                           <p className="text-muted-foreground text-[10px]">
-                            Breaking down task into atomic units...
+                            {t('breakingDownTask')}
                           </p>
                         </div>
                       </div>
@@ -360,12 +362,7 @@ function TaskDecomposerContent() {
                         {steps.map((step, index) => (
                           <div key={step.id} className="relative z-10 group">
                             <div className="flex items-start gap-6 py-1.5">
-                              <div className={cn(
-                                "mt-0.5 rounded-full border p-0.5 transition-colors",
-                                completedStepIds.includes(step.id) 
-                                  ? "bg-purple-500/20 border-purple-500/30"
-                                  : "bg-background/50 border-white/10 group-hover:border-purple-500/50"
-                              )}>
+                              <div className="mt-0.5 rounded-full border p-0.5 transition-colors bg-background/50 border-white/10 group-hover:border-purple-500/50">
                                 <Checkbox
                                   id={step.id}
                                   checked={completedStepIds.includes(step.id)}
@@ -423,7 +420,7 @@ function TaskDecomposerContent() {
                         className="w-full bg-purple-600 hover:bg-purple-700 h-8 text-xs"
                         onClick={handleStartSession}
                       >
-                        <Play className="mr-2 size-3" /> Start First Session
+                        <Play className="mr-2 size-3" /> {t('startFirstSession')}
                       </Button>
                     </CardFooter>
                   )}
@@ -460,31 +457,28 @@ function TaskDecomposerContent() {
               <CardHeader className="pb-2 pt-4 px-4">
                 <CardTitle className="flex items-center gap-2 text-sm">
                   <Zap className="size-3.5 text-yellow-500 fill-yellow-500" />
-                  Why This Works
+                  {t('whyThisWorks')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 px-4 pb-4">
                 <div className="space-y-0.5">
-                  <h4 className="font-semibold text-[10px]">Cognitive Load Theory</h4>
+                  <h4 className="font-semibold text-[10px]">{t('cognitiveLoadTheory')}</h4>
                   <p className="text-[10px] text-muted-foreground">
-                    Large tasks trigger "analysis paralysis". Breaking them down reduces the cognitive
-                    load required to start.
+                    {t('cognitiveLoadDesc')}
                   </p>
                 </div>
                 <Separator />
                 <div className="space-y-0.5">
-                  <h4 className="font-semibold text-[10px]">The Dopamine Loop</h4>
+                  <h4 className="font-semibold text-[10px]">{t('dopamineLoop')}</h4>
                   <p className="text-[10px] text-muted-foreground">
-                    Checking off small items creates frequent dopamine hits, maintaining momentum and
-                    motivation.
+                    {t('dopamineLoopDesc')}
                   </p>
                 </div>
                 <Separator />
                 <div className="space-y-0.5">
-                  <h4 className="font-semibold text-[10px]">Time Boxing</h4>
+                  <h4 className="font-semibold text-[10px]">{t('timeBoxing')}</h4>
                   <p className="text-[10px] text-muted-foreground">
-                    5-15 minute chunks fit into gaps in your schedule, making it easier to make
-                    progress on busy days.
+                    {t('timeBoxingDesc')}
                   </p>
                 </div>
               </CardContent>
@@ -492,7 +486,7 @@ function TaskDecomposerContent() {
 
             <Card className="bg-background/40 backdrop-blur-md border-white/10 shadow-lg">
               <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="text-sm">Pro Tips</CardTitle>
+                <CardTitle className="text-sm">{t('proTips')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 px-4 pb-4">
                 <div className="flex gap-2">
@@ -500,7 +494,7 @@ function TaskDecomposerContent() {
                     <CheckCircle2 className="size-3" />
                   </div>
                   <p className="text-[10px] text-muted-foreground">
-                    Start with the easiest micro-step to build momentum immediately.
+                    {t('tipMomentum')}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -508,7 +502,7 @@ function TaskDecomposerContent() {
                     <ArrowRight className="size-3" />
                   </div>
                   <p className="text-[10px] text-muted-foreground">
-                    If a step still feels "hard", break it down further until it feels trivial.
+                    {t('tipBreakDown')}
                   </p>
                 </div>
               </CardContent>

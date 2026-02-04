@@ -1,6 +1,22 @@
+import { useState } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { 
   AreaChart, 
   Area, 
@@ -22,41 +38,82 @@ import {
   Clock, 
   Target, 
   AlertCircle,
-  Calendar as CalendarIcon,
-  Download
+  Download,
+  Loader2,
+  FileText
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useQuery } from "convex/react"
+import { api } from "../../convex/_generated/api"
+import { useI18n } from "@/hooks/use-i18n"
 
-const weeklyData = [
-  { day: 'Mon', score: 65, hours: 4.2 },
-  { day: 'Tue', score: 78, hours: 5.5 },
-  { day: 'Wed', score: 82, hours: 6.1 },
-  { day: 'Thu', score: 70, hours: 4.8 },
-  { day: 'Fri', score: 85, hours: 6.5 },
-  { day: 'Sat', score: 45, hours: 2.0 },
-  { day: 'Sun', score: 50, hours: 2.5 },
-]
-
-const timeOfDayData = [
-  { time: '6am', focus: 30 },
-  { time: '8am', focus: 65 },
-  { time: '10am', focus: 95 },
-  { time: '12pm', focus: 45 },
-  { time: '2pm', focus: 85 },
-  { time: '4pm', focus: 60 },
-  { time: '6pm', focus: 40 },
-  { time: '8pm', focus: 25 },
-]
-
-const distractionData = [
-  { name: 'Slack', value: 35, color: '#E01E5A' },
-  { name: 'Email', value: 25, color: '#4285F4' },
-  { name: 'Social', value: 20, color: '#C13584' },
-  { name: 'News', value: 10, color: '#FF9900' },
-  { name: 'Other', value: 10, color: '#888888' },
-]
+const COLORS = ['#E01E5A', '#4285F4', '#C13584', '#FF9900', '#888888', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function AnalyticsPage() {
+  const { t } = useI18n()
+  const [reportDays, setReportDays] = useState(7)
+  const [showReport, setShowReport] = useState(false)
+
+  const analytics = useQuery(api.analytics.getAnalyticsSummary);
+  const weeklyReport = useQuery(api.analytics.getWeeklyReport, showReport ? { days: reportDays } : "skip");
+
+  const handleGenerateReport = () => {
+    setShowReport(true)
+  }
+
+  const handleDownloadCsv = () => {
+    if (!weeklyReport) return;
+    
+    const headers = ["Date", "Focus Minutes", "Distraction Minutes"];
+    const rows = weeklyReport.csvRows.map(row => [
+      new Date(row.date).toLocaleDateString(),
+      row.focusMinutes,
+      row.distractionMinutes
+    ]);
+    
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `productivity_report_${reportDays}days.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (!analytics) {
+    return (
+      <DashboardLayout>
+        <div className="flex h-[calc(100vh-100px)] w-full items-center justify-center">
+          <div className="flex flex-col items-center gap-4 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p>Loading analytics...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  const { weeklyFocusTrend, distractionSources, peakPerformanceHours, aiInsights } = analytics;
+
+  // Derive KPIs
+  const totalFocusMinutes = weeklyFocusTrend.reduce((acc, day) => acc + day.focusMinutes, 0);
+  const totalFocusHours = totalFocusMinutes / 60;
+  const avgFocusScore = Math.round(weeklyFocusTrend.reduce((acc, day) => acc + day.focusScore, 0) / (weeklyFocusTrend.length || 1));
+  const totalDistractions = distractionSources.reduce((acc, src) => acc + src.minutes, 0);
+  
+  // Last day trend comparison (mock logic for trend since we only get 7 days)
+  const lastDay = weeklyFocusTrend[weeklyFocusTrend.length - 1];
+  const prevDay = weeklyFocusTrend[weeklyFocusTrend.length - 2];
+  const scoreTrend = lastDay && prevDay ? lastDay.focusScore - prevDay.focusScore : 0;
+
+  const hasData = totalFocusMinutes > 0 || totalDistractions > 0;
+
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-8 p-8 max-w-[1600px] mx-auto animate-in fade-in duration-500">
@@ -65,228 +122,332 @@ export default function AnalyticsPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-              Productivity Analytics
+              {t('analytics')}
             </h1>
             <p className="text-muted-foreground mt-1 text-lg">
-              Deep dive into your cognitive performance and focus trends.
+              {t('deepDive')}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2">
-              <CalendarIcon className="h-4 w-4" />
-              Last 7 Days
-            </Button>
-            <Button className="gap-2 bg-primary hover:bg-primary/90">
-              <Download className="h-4 w-4" />
-              Export Report
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+            <Select value={reportDays.toString()} onValueChange={(v) => setReportDays(parseInt(v))}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder={t('selectPeriod')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">{t('last7Days')}</SelectItem>
+                <SelectItem value="14">{t('last14Days')}</SelectItem>
+                <SelectItem value="30">{t('last30Days')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleGenerateReport} variant="outline" className="w-full sm:w-auto gap-2">
+              <FileText className="h-4 w-4" />
+              {t('generateReport')}
             </Button>
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <KpiCard 
-            title="Focus Score" 
-            value="78" 
-            unit="/ 100"
-            trend="+5%" 
-            trendUp={true}
-            icon={Target}
-            description="Top 15% of users"
-          />
-          <KpiCard 
-            title="Deep Work" 
-            value="31.6" 
-            unit="hrs"
-            trend="+2.4h" 
-            trendUp={true}
-            icon={Zap}
-            description="vs. 29.2h last week"
-          />
-          <KpiCard 
-            title="Distractions" 
-            value="142" 
-            unit="blocked"
-            trend="-12%" 
-            trendUp={true} // Less distractions is good
-            icon={AlertCircle}
-            description="Saved ~4.5 hours"
-          />
-          <KpiCard 
-            title="Flow Efficiency" 
-            value="64" 
-            unit="%"
-            trend="-2%" 
-            trendUp={false}
-            icon={Clock}
-            description="Time in flow / Total time"
-          />
-        </div>
+        {!hasData ? (
+           <div className="flex flex-col items-center justify-center py-20 bg-muted/20 rounded-xl border border-dashed">
+             <Target className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+             <h3 className="text-xl font-semibold">{t('noActivity')}</h3>
+             <p className="text-muted-foreground max-w-md text-center mt-2">
+               {t('startTracking')}
+             </p>
+           </div>
+        ) : (
+          <>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <KpiCard 
+                title={t('avgFocusScore')} 
+                value={avgFocusScore.toString()} 
+                unit="/ 100"
+                trend={`${scoreTrend > 0 ? '+' : ''}${scoreTrend}%`} 
+                trendUp={scoreTrend >= 0}
+                icon={Target}
+                description={t('last7Days')}
+              />
+              <KpiCard 
+                title={t('deepWork')} 
+                value={totalFocusHours.toFixed(1)} 
+                unit="hrs"
+                trend="Total" 
+                trendUp={true}
+                icon={Zap}
+                description={t('focusTime')}
+              />
+              <KpiCard 
+                title={t('distractionTime')} 
+                value={Math.round(totalDistractions).toString()} 
+                unit="min"
+                trend={`${Math.round(totalDistractions / 60)}h`} 
+                trendUp={false} // More distraction is bad usually
+                icon={AlertCircle}
+                description={t('totalTimeLost')}
+              />
+              <KpiCard 
+                title={t('flowEfficiency')} 
+                value={Math.round((totalFocusMinutes / (totalFocusMinutes + totalDistractions || 1)) * 100).toString()} 
+                unit="%"
+                trend="Ratio" 
+                trendUp={true}
+                icon={Clock}
+                description="Focus / Total Time"
+              />
+            </div>
 
-        {/* Main Charts Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Weekly Focus Trend */}
-          <Card className="lg:col-span-2 border-none shadow-md bg-gradient-to-br from-card to-card/50">
-            <CardHeader>
-              <CardTitle>Weekly Focus Trend</CardTitle>
-              <CardDescription>Daily focus score vs. deep work hours</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={weeklyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.4} />
-                  <XAxis 
-                    dataKey="day" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: 'var(--muted-foreground)' }} 
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: 'var(--muted-foreground)' }} 
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'var(--popover)', 
-                      borderColor: 'var(--border)', 
-                      borderRadius: '8px',
-                      boxShadow: 'var(--shadow-md)'
-                    }}
-                    itemStyle={{ color: 'var(--popover-foreground)' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="score" 
-                    stroke="var(--primary)" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorScore)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Distraction Sources */}
-          <Card className="border-none shadow-md">
-            <CardHeader>
-              <CardTitle>Distraction Sources</CardTitle>
-              <CardDescription>Where your attention goes</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[350px] flex flex-col justify-center items-center">
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={distractionData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {distractionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                     contentStyle={{ 
-                      backgroundColor: 'var(--popover)', 
-                      borderColor: 'var(--border)', 
-                      borderRadius: '8px'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-4 w-full px-4">
-                {distractionData.map((item) => (
-                  <div key={item.name} className="flex items-center gap-2 text-sm">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-muted-foreground">{item.name}</span>
-                    <span className="ml-auto font-medium">{item.value}%</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Secondary Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* Peak Performance Hours */}
-          <Card className="border-none shadow-md">
-            <CardHeader>
-              <CardTitle>Peak Performance Hours</CardTitle>
-              <CardDescription>Average focus levels throughout the day</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={timeOfDayData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.4} />
-                  <XAxis 
-                    dataKey="time" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: 'var(--muted-foreground)' }} 
-                  />
-                  <Tooltip 
-                    cursor={{ fill: 'var(--muted)', opacity: 0.2 }}
-                    contentStyle={{ 
-                      backgroundColor: 'var(--popover)', 
-                      borderColor: 'var(--border)', 
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Bar dataKey="focus" radius={[4, 4, 0, 0]}>
-                    {timeOfDayData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.focus > 80 ? 'var(--primary)' : 'var(--muted-foreground)'} 
-                        opacity={entry.focus > 80 ? 1 : 0.3}
+            {/* Main Charts Area */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              {/* Weekly Focus Trend */}
+              <Card className="lg:col-span-2 border-none shadow-md bg-gradient-to-br from-card to-card/50">
+                <CardHeader>
+                  <CardTitle>{t('weeklyFocusTrend')}</CardTitle>
+                  <CardDescription>{t('dailyFocusScore')}</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[350px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={weeklyFocusTrend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.4} />
+                      <XAxis 
+                        dataKey="day" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: 'var(--muted-foreground)' }} 
+                        dy={10}
                       />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+                      <YAxis 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: 'var(--muted-foreground)' }} 
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'var(--popover)', 
+                          borderColor: 'var(--border)', 
+                          borderRadius: '8px',
+                          boxShadow: 'var(--shadow-md)'
+                        }}
+                        itemStyle={{ color: 'var(--popover-foreground)' }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="focusScore" 
+                        name={t('focusScore')}
+                        stroke="var(--primary)" 
+                        strokeWidth={3}
+                        fillOpacity={1} 
+                        fill="url(#colorScore)" 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-          {/* Insights Panel */}
-          <Card className="border-none shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-blue-600" />
-                AI Insights
-              </CardTitle>
-              <CardDescription>Personalized recommendations based on your data</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <InsightItem 
-                title="Morning Peak"
-                text="You are 45% more focused between 9am and 11am. Schedule your hardest tasks then."
-              />
-              <InsightItem 
-                title="Meeting Fatigue"
-                text="Focus drops by 30% after 2pm meetings. Try grouping meetings or adding 15m buffers."
-              />
-              <InsightItem 
-                title="Slack Distraction"
-                text="Slack interrupts you every 12 mins on average. Consider enabling 'Do Not Disturb' mode."
-              />
-            </CardContent>
-          </Card>
+              {/* Distraction Sources */}
+              <Card className="border-none shadow-md">
+                <CardHeader>
+                  <CardTitle>{t('distractionSources')}</CardTitle>
+                  <CardDescription>{t('attentionGoes')}</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[350px] flex flex-col justify-center items-center">
+                  {distractionSources.length > 0 ? (
+                    <>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                          <Pie
+                            data={distractionSources}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="percentage"
+                            nameKey="label"
+                          >
+                            {distractionSources.map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                             contentStyle={{ 
+                              backgroundColor: 'var(--popover)', 
+                              borderColor: 'var(--border)', 
+                              borderRadius: '8px'
+                            }}
+                            formatter={(value: number) => [`${value}%`, 'Percentage']}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-4 w-full px-4">
+                        {distractionSources.slice(0, 6).map((item, index) => (
+                          <div key={item.label} className="flex items-center gap-2 text-sm">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                            <span className="text-muted-foreground truncate max-w-[80px]" title={item.label}>{item.label}</span>
+                            <span className="ml-auto font-medium">{item.percentage}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                      <p>{t('noDistractionData')}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-        </div>
+            {/* Secondary Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Peak Performance Hours */}
+              <Card className="border-none shadow-md">
+                <CardHeader>
+                  <CardTitle>{t('peakPerformanceHours')}</CardTitle>
+                  <CardDescription>{t('focusMinutesByHour')}</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  {peakPerformanceHours.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={peakPerformanceHours}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.4} />
+                        <XAxis 
+                          dataKey="label" 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fill: 'var(--muted-foreground)' }} 
+                        />
+                        <Tooltip 
+                          cursor={{ fill: 'var(--muted)', opacity: 0.2 }}
+                          contentStyle={{ 
+                            backgroundColor: 'var(--popover)', 
+                            borderColor: 'var(--border)', 
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar dataKey="focusMinutes" name={t('focusMin')} radius={[4, 4, 0, 0]}>
+                          {peakPerformanceHours.map((_, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={index < 3 ? 'var(--primary)' : 'var(--muted-foreground)'} 
+                              opacity={index < 3 ? 1 : 0.5}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                      <p>{t('noDataAvailable')}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Insights Panel */}
+              <Card className="border-none shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-blue-600" />
+                    {t('aiInsights')}
+                  </CardTitle>
+                  <CardDescription>{t('personalizedRecs')}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {aiInsights.map((insight, i) => (
+                    <InsightItem 
+                      key={i}
+                      title={insight.title}
+                      text={insight.text}
+                    />
+                  ))}
+                  {aiInsights.length === 0 && (
+                     <p className="text-muted-foreground text-sm">{t('noDataAvailable')}</p>
+                  )}
+                </CardContent>
+              </Card>
+
+            </div>
+
+            {weeklyReport && (
+              <Card className="animate-in fade-in slide-in-from-bottom-4 duration-500 border-none shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>{t('weeklyReport')}</CardTitle>
+                    <CardDescription>
+                      {t('summaryLastDays').replace('{days}', weeklyReport.summary.days.toString())}
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleDownloadCsv} variant="outline" size="sm" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    {t('exportCsv')}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm text-muted-foreground">{t('focusTime')}</p>
+                      <p className="text-2xl font-bold">{Math.round(weeklyReport.summary.focusMinutes / 60)}h</p>
+                    </div>
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm text-muted-foreground">{t('distractions')}</p>
+                      <p className="text-2xl font-bold">{Math.round(weeklyReport.summary.distractionMinutes / 60)}h</p>
+                    </div>
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm text-muted-foreground">{t('focusScore')}</p>
+                      <p className="text-2xl font-bold">{weeklyReport.summary.focusScore}%</p>
+                    </div>
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm text-muted-foreground">{t('totalDays')}</p>
+                      <p className="text-2xl font-bold">{weeklyReport.summary.days}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('date')}</TableHead>
+                          <TableHead>{t('focusMin')}</TableHead>
+                          <TableHead>{t('distractionMin')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {weeklyReport.csvRows.length > 0 ? (
+                          weeklyReport.csvRows.slice(0, 7).map((row) => (
+                            <TableRow key={row.date}>
+                              <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                              <TableCell>{row.focusMinutes}</TableCell>
+                              <TableCell>{row.distractionMinutes}</TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={3} className="h-24 text-center">
+                              {t('noDataAvailable')}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {weeklyReport.csvRows.length > 7 && (
+                    <p className="text-xs text-muted-foreground mt-4 text-center">
+                      {t('showingRecentDays')}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
       </div>
     </DashboardLayout>
   )

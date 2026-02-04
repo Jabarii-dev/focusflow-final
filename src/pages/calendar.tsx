@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 import { SettingsPanel, CalendarSettings } from "@/components/calendar/settings-panel"
 import { useMutation } from "convex/react"
 import { api } from "../../convex/_generated/api"
+import { useI18n } from "@/hooks/use-i18n"
 
 const colorPreviewMap: Record<string, string> = {
   blue: "bg-blue-500",
@@ -26,10 +27,12 @@ const colorPreviewMap: Record<string, string> = {
 }
 
 export default function CalendarPage() {
+  const { t } = useI18n()
   const [date, setDate] = useState<Date>(new Date())
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isUpcomingDialogOpen, setIsUpcomingDialogOpen] = useState(false)
   const logEvent = useMutation(api.activity.logEvent)
 
   // Calendar Settings
@@ -113,7 +116,7 @@ export default function CalendarPage() {
   // Handle session completion logging
   useEffect(() => {
     if (sessionCompleted) {
-      toast.success("Focus session completed!")
+      toast.success(t('sessionCompleted'))
       if (activeEvent) {
         logEvent({
           type: "focus",
@@ -132,7 +135,7 @@ export default function CalendarPage() {
   const handleCompleteSession = () => {
     setTimerState({ isRunning: false, timeLeft: 0 })
     setActiveEventId(null)
-    toast.success("Session marked as complete")
+    toast.success(t('sessionMarkedComplete'))
   }
 
   const handleStartSession = (event: Event) => {
@@ -179,7 +182,7 @@ export default function CalendarPage() {
 
   const handleSync = () => {
     setDate(new Date())
-    toast.success("Calendar synced", {
+    toast.success(t('calendarSynced'), {
       style: {
         background: '#333',
         color: '#fff',
@@ -203,7 +206,7 @@ export default function CalendarPage() {
       setActiveEventId(null)
       setTimerState(prev => ({ ...prev, isRunning: false }))
     }
-    toast.success("Event deleted")
+    toast.success(t('eventDeleted'))
   }
 
   const handleEventEdit = (event: Event) => {
@@ -246,7 +249,7 @@ export default function CalendarPage() {
 
   const handleSaveEvent = () => {
     if (!formData.title) {
-      toast.error("Please enter a title")
+      toast.error(t('pleaseEnterTitle'))
       return
     }
 
@@ -278,7 +281,7 @@ export default function CalendarPage() {
         }
         return e
       }))
-      toast.success("Event updated")
+      toast.success(t('eventUpdated'))
     } else {
       // Create new
       const event: Event = {
@@ -292,7 +295,7 @@ export default function CalendarPage() {
         tags: [formData.tag]
       }
       setEvents(prev => [...prev, event])
-      toast.success("Event created")
+      toast.success(t('eventCreated'))
     }
 
     setIsDialogOpen(false)
@@ -371,10 +374,10 @@ export default function CalendarPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <h1 className="text-lg font-light tracking-wide text-foreground">
-              CALENDAR
+              {t('calendar').toUpperCase()}
             </h1>
             <p className="text-[10px] text-muted-foreground/80 font-light">
-              Manage your schedule and focus blocks
+              {t('manageSchedule')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -385,7 +388,7 @@ export default function CalendarPage() {
               className="border-white/10 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground h-8 text-xs"
             >
               <CalendarIcon className="mr-2 h-3 w-3" />
-              Sync
+              {t('sync')}
             </Button>
             <Button 
               size="sm" 
@@ -393,7 +396,7 @@ export default function CalendarPage() {
               className="bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.2)] h-8 text-xs"
             >
               <Plus className="mr-2 h-3 w-3" />
-              New Block
+              {t('newBlock')}
             </Button>
           </div>
         </div>
@@ -444,7 +447,7 @@ export default function CalendarPage() {
                         onClick={() => setViewMode('day')}
                         className={`text-[10px] font-medium h-6 px-2 rounded-md transition-all ${viewMode === 'day' ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                       >
-                       Day
+                       {t('day')}
                      </Button>
                      <Button 
                         variant="ghost" 
@@ -452,7 +455,7 @@ export default function CalendarPage() {
                         onClick={() => setViewMode('week')}
                         className={`text-[10px] font-medium h-6 px-2 rounded-md transition-all ${viewMode === 'week' ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                       >
-                       Week
+                       {t('week')}
                      </Button>
                    </div>
                    <Button 
@@ -469,7 +472,7 @@ export default function CalendarPage() {
               {/* Content Split: DatePicker + Timeline */}
               <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                 {/* Left: Mini Calendar */}
-                <div className="md:w-64 border-r border-white/5 bg-white/[0.01] p-3 hidden md:block shrink-0">
+                <div className="md:w-64 border-r border-white/5 bg-white/[0.01] p-3 shrink-0">
                   <Calendar
                     mode="single"
                     selected={date}
@@ -479,13 +482,13 @@ export default function CalendarPage() {
                   
                   <div className="mt-2 space-y-2">
                     <h4 className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mb-1">
-                      Calendars
+                      {t('calendars')}
                     </h4>
                     <div className="space-y-1">
                       {['Work', 'Personal', 'Focus'].map(cal => (
                         <div key={cal} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer group">
                           <div className={`h-1.5 w-1.5 rounded-full ${cal === 'Focus' ? 'bg-blue-500' : cal === 'Work' ? 'bg-emerald-500' : 'bg-violet-500'} ring-2 ring-transparent group-hover:ring-white/20 transition-all`} />
-                          {cal}
+                          {cal === 'Work' ? t('work') : cal === 'Personal' ? t('personal') : t('focus')}
                         </div>
                       ))}
                     </div>
@@ -550,23 +553,46 @@ export default function CalendarPage() {
               onStartSession={handleStartSession}
             />
             <div className="rounded-2xl border border-white/5 bg-background/40 backdrop-blur-xl p-3 shadow-lg">
-              <UpcomingList events={upcomingEvents} />
+              <UpcomingList 
+                events={upcomingEvents} 
+                limit={3}
+                onViewAll={() => setIsUpcomingDialogOpen(true)}
+              />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Upcoming Events Dialog */}
+      <Dialog open={isUpcomingDialogOpen} onOpenChange={setIsUpcomingDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-[#0A0A0A] border-white/10 text-foreground">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-light tracking-wide">
+              {t('upcomingSessions')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 max-h-[60vh] overflow-y-auto">
+             <UpcomingList events={upcomingEvents} />
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsUpcomingDialogOpen(false)} className="w-full bg-white/5 hover:bg-white/10 border border-white/10">
+              {t('close')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* New/Edit Block Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px] bg-[#0A0A0A] border-white/10 text-foreground">
           <DialogHeader>
             <DialogTitle className="text-lg font-light tracking-wide">
-              {editingEventId ? "Edit Block" : "New Block"}
+              {editingEventId ? t('editBlock') : t('newBlock')}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="title" className="text-xs text-muted-foreground">Title</Label>
+              <Label htmlFor="title" className="text-xs text-muted-foreground">{t('title')}</Label>
               <Input
                 id="title"
                 value={formData.title}
@@ -577,7 +603,7 @@ export default function CalendarPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="start-time" className="text-xs text-muted-foreground">Start Time</Label>
+                <Label htmlFor="start-time" className="text-xs text-muted-foreground">{t('startTime')}</Label>
                 <Input
                   id="start-time"
                   type="time"
@@ -587,14 +613,14 @@ export default function CalendarPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label className="text-xs text-muted-foreground">Duration</Label>
+                <Label className="text-xs text-muted-foreground">{t('duration')}</Label>
                 <div className="flex gap-2">
                   <Select 
                     value={formData.durationHours} 
                     onValueChange={(v) => setFormData({ ...formData, durationHours: v })}
                   >
                     <SelectTrigger className="bg-white/5 border-white/10 text-sm">
-                      <SelectValue placeholder="Hours" />
+                      <SelectValue placeholder={t('hours')} />
                     </SelectTrigger>
                     <SelectContent className="bg-[#111] border-white/10">
                       {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(h => (
@@ -607,7 +633,7 @@ export default function CalendarPage() {
                     onValueChange={(v) => setFormData({ ...formData, durationMinutes: v })}
                   >
                     <SelectTrigger className="bg-white/5 border-white/10 text-sm">
-                      <SelectValue placeholder="Mins" />
+                      <SelectValue placeholder={t('mins')} />
                     </SelectTrigger>
                     <SelectContent className="bg-[#111] border-white/10">
                       {[0, 15, 30, 45].map(m => (
@@ -620,13 +646,13 @@ export default function CalendarPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
                <div className="grid gap-2">
-                <Label className="text-xs text-muted-foreground">Tag</Label>
+                <Label className="text-xs text-muted-foreground">{t('tag')}</Label>
                 <Select 
                     value={formData.tag} 
                     onValueChange={(v) => setFormData({ ...formData, tag: v })}
                   >
                     <SelectTrigger className="bg-white/5 border-white/10 text-sm">
-                      <SelectValue placeholder="Select tag" />
+                      <SelectValue placeholder={t('selectTag')} />
                     </SelectTrigger>
                     <SelectContent className="bg-[#111] border-white/10">
                       {['Work', 'Personal', 'Dev', 'Meeting', 'Health'].map(t => (
@@ -636,13 +662,13 @@ export default function CalendarPage() {
                   </Select>
                </div>
                <div className="grid gap-2">
-                <Label className="text-xs text-muted-foreground">Color</Label>
+                <Label className="text-xs text-muted-foreground">{t('color')}</Label>
                 <Select 
                     value={formData.color} 
                     onValueChange={(v) => setFormData({ ...formData, color: v as any })}
                   >
                     <SelectTrigger className="bg-white/5 border-white/10 text-sm">
-                      <SelectValue placeholder="Select color" />
+                      <SelectValue placeholder={t('selectColor')} />
                     </SelectTrigger>
                     <SelectContent className="bg-[#111] border-white/10">
                       {['blue', 'indigo', 'violet', 'emerald', 'rose'].map(c => (
@@ -659,9 +685,9 @@ export default function CalendarPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-white/10 hover:bg-white/5">Cancel</Button>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-white/10 hover:bg-white/5">{t('cancel')}</Button>
             <Button onClick={handleSaveEvent} className="bg-blue-600 hover:bg-blue-500">
-              {editingEventId ? "Save Changes" : "Create Block"}
+              {editingEventId ? t('saveChanges') : t('createBlock')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -672,7 +698,7 @@ export default function CalendarPage() {
         <DialogContent className="sm:max-w-[425px] bg-[#0A0A0A] border-white/10 text-foreground">
           <DialogHeader>
             <DialogTitle className="text-lg font-light tracking-wide">
-              Calendar Settings
+              {t('calendarSettings')}
             </DialogTitle>
           </DialogHeader>
           <SettingsPanel 
@@ -681,7 +707,7 @@ export default function CalendarPage() {
           />
           <DialogFooter>
             <Button onClick={() => setIsSettingsOpen(false)} className="w-full bg-white/5 hover:bg-white/10 border border-white/10">
-              Done
+              {t('done')}
             </Button>
           </DialogFooter>
         </DialogContent>

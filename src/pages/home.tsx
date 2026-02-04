@@ -7,6 +7,7 @@ import { LiveTable } from "@/components/dashboard/live-table"
 import { useProfile } from "@/hooks/use-profile"
 import { useQuery } from "convex/react"
 import { api } from "../../convex/_generated/api"
+import { useI18n } from "@/hooks/use-i18n"
 
 function formatDuration(minutes: number) {
   const h = Math.floor(minutes / 60)
@@ -26,6 +27,7 @@ function calculateChange(data: number[] | undefined): number {
 
 export default function HomePage() {
   const { name } = useProfile()
+  const { t } = useI18n()
   const stats = useQuery(api.dashboard.getDashboardStats)
   const isLoading = stats === undefined
 
@@ -34,11 +36,11 @@ export default function HomePage() {
       <div className="space-y-3">
         
         {/* Identity Header */}
-        <div className="-mx-3 -mt-3 mb-3 flex h-12 items-center border-b px-3 md:-mx-4 md:-mt-4 md:px-4">
-          <div className="w-[70%] space-y-0.5">
-            <h1 className="text-base font-semibold text-gray-800 dark:text-gray-100">Welcome back, {name}</h1>
-            <p className="text-[10px] font-normal text-muted-foreground">
-              Track productivity and manage tasks with ease and convenience
+        <div className="-mx-3 -mt-3 mb-3 flex h-auto min-h-14 items-center border-b px-3 py-2 md:-mx-4 md:-mt-4 md:px-4 md:py-0">
+          <div className="w-full md:w-[70%] space-y-1">
+            <h1 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100">{t('welcomeBack')}, {name}</h1>
+            <p className="text-xs font-normal text-muted-foreground">
+              {t('trackProductivity')}
             </p>
           </div>
         </div>
@@ -46,7 +48,7 @@ export default function HomePage() {
         {/* Row 1: Metrics */}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard 
-            title="Focus Time" 
+            title={t('focusTime')} 
             value={stats ? formatDuration(stats.focusMinutes) : "--"} 
             change={calculateChange(stats?.focusMinutesSparkline)}
             data={stats?.focusMinutesSparkline || []}
@@ -54,7 +56,7 @@ export default function HomePage() {
             loading={isLoading}
           />
           <MetricCard 
-            title="Distractions" 
+            title={t('distractions')} 
             value={stats ? stats.distractionCount.toString() : "--"} 
             change={calculateChange(stats?.distractionCountSparkline)} 
             data={stats?.distractionCountSparkline || []}
@@ -62,7 +64,7 @@ export default function HomePage() {
             loading={isLoading}
           />
           <MetricCard 
-            title="Tasks Completed" 
+            title={t('tasksCompleted')} 
             value={stats ? stats.tasksCompleted.toString() : "--"} 
             change={calculateChange(stats?.tasksCompletedSparkline)} 
             data={stats?.tasksCompletedSparkline || []}
@@ -70,7 +72,7 @@ export default function HomePage() {
             loading={isLoading}
           />
           <MetricCard 
-            title="Productivity" 
+            title={t('productivity')} 
             value={stats ? `${stats.productivityScore}%` : "--"} 
             change={calculateChange(stats?.productivityScoreSparkline)} 
             data={stats?.productivityScoreSparkline || []}

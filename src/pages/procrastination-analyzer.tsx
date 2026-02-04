@@ -19,8 +19,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { useI18n } from "@/hooks/use-i18n"
 
 export default function ProcrastinationAnalyzerPage() {
+  const { t } = useI18n()
   const stats = useQuery(api.activity.getStats)
   const logEvent = useMutation(api.activity.logEvent)
   const lastLogTime = useRef<number>(0)
@@ -60,7 +62,7 @@ export default function ProcrastinationAnalyzerPage() {
                 minutes: minutes,
               })
               lastLogTime.current = Date.now()
-              toast.error("Focus Blocker Active: Distraction attempt logged!", {
+              toast.error(`${t('focusBlockerActive')}: ${t('distractionAttemptLogged')}`, {
                 icon: "🚫",
                 style: {
                   background: "#1e293b",
@@ -140,9 +142,9 @@ export default function ProcrastinationAnalyzerPage() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-md bg-[#0f172a] border-slate-800 text-slate-200">
             <DialogHeader>
-              <DialogTitle>Welcome back</DialogTitle>
+              <DialogTitle>{t('welcomeBack')}</DialogTitle>
               <DialogDescription className="text-slate-400">
-                You were away for {pendingDuration} minute{pendingDuration !== 1 ? 's' : ''}. What distracted you?
+                {t('youWereAway').replace('{minutes}', pendingDuration.toString()).replace('{s}', pendingDuration !== 1 ? 's' : '')}
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-3 py-4">
@@ -164,7 +166,7 @@ export default function ProcrastinationAnalyzerPage() {
           <div className="fixed top-20 right-6 z-50 animate-in slide-in-from-right-10 fade-in duration-300">
             <div className="bg-red-500/10 backdrop-blur-md border border-red-500/50 text-red-400 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.2)] font-mono text-xs font-bold uppercase tracking-widest flex items-center gap-2">
               <Shield className="size-4 fill-red-500/20" /> 
-              <span className="relative top-[1px]">Focus Blocker Active</span>
+              <span className="relative top-[1px]">{t('focusBlockerActive')}</span>
             </div>
           </div>
         )}

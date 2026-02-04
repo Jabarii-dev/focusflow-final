@@ -22,7 +22,7 @@ type ActiveTaskSummary = {
   category: string;
   dueDate: number;
   impact: "low" | "medium" | "high" | "critical";
-  status: "active" | "done";
+  status: "active" | "done" | "overdue";
   createdAt: number;
 };
 
@@ -81,7 +81,7 @@ export const logEvent = mutation({
   handler: async (ctx, args): Promise<Id<"activityEvents">> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new Error("Please sign in to continue");
     }
 
     const now = Date.now();
@@ -92,9 +92,78 @@ export const logEvent = mutation({
       label: args.label.trim() || "Untitled",
       minutes: args.minutes,
       createdAt: now,
+      updatedAt: now,
       hourBucket,
     });
     return id;
+  },
+});
+
+export const updateActivity = mutation({
+  args: {
+    id: v.id("activityEvents"),
+    label: v.string(),
+    minutes: v.number(),
+  },
+  handler: async (ctx, args): Promise<Id<"activityEvents">> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Please sign in to continue");
+    }
+
+    const event = await ctx.db.get(args.id);
+    if (!event || event.userId !== userId) {
+      throw new Error("Activity not found");
+    }
+
+    const updatedAt = Date.now();
+    await ctx.db.patch(args.id, {
+      label: args.label.trim() || "Untitled",
+      minutes: args.minutes,
+      updatedAt,
+    });
+
+    return args.id;
+  },
+});
+
+export const deleteActivity = mutation({
+  args: {
+    id: v.id("activityEvents"),
+  },
+  handler: async (ctx, args): Promise<Id<"activityEvents">> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Please sign in to continue");
+    }
+
+    const event = await ctx.db.get(args.id);
+    if (!event || event.userId !== userId) {
+      throw new Error("Activity not found");
+    }
+
+    await ctx.db.delete(args.id);
+    return args.id;
+  },
+});
+
+export const listEvents = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Please sign in to continue");
+    }
+
+    const limit = args.limit ?? 20;
+
+    const events = await ctx.db
+      .query("activityEvents")
+      .withIndex("by_userId_createdAt", (q) => q.eq("userId", userId))
+      .order("desc")
+      .take(limit);
+
+    return events;
   },
 });
 
@@ -103,7 +172,7 @@ export const getStats = query({
   handler: async (ctx): Promise<StatsSummary> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new Error("Please sign in to continue");
     }
 
     const now = Date.now();

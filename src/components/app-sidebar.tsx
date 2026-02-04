@@ -22,56 +22,58 @@ import {
   Calendar,
   Bell
 } from "lucide-react"
-
-// Menu items.
-const items = [
-  {
-    title: "Dashboard",
-    url: "/",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Calendar",
-    url: "/calendar",
-    icon: Calendar,
-  },
-  {
-    title: "Notifications",
-    url: "/notifications",
-    icon: Bell,
-  },
-  {
-    title: "Analytics",
-    url: "/analytics",
-    icon: PieChart,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-  },
-]
-
-const tools = [
-  {
-    title: "Procrastination Analyzer",
-    url: "/procrastination",
-    icon: Hourglass,
-  },
-  {
-    title: "Task Decomposer",
-    url: "/task-decomposer",
-    icon: Layers,
-  },
-  {
-    title: "Distraction Cost",
-    url: "/distraction-cost",
-    icon: DollarSign,
-  },
-]
+import { useI18n } from "@/hooks/use-i18n"
 
 export function AppSidebar() {
   const { pathname } = useLocation()
+  const { t } = useI18n()
+
+  // Menu items.
+  const items = [
+    {
+      title: t('dashboard'),
+      url: "/",
+      icon: LayoutDashboard,
+    },
+    {
+      title: t('calendar'),
+      url: "/calendar",
+      icon: Calendar,
+    },
+    {
+      title: t('notifications'),
+      url: "/notifications",
+      icon: Bell,
+    },
+    {
+      title: t('analytics'),
+      url: "/analytics",
+      icon: PieChart,
+    },
+    {
+      title: t('settings'),
+      url: "/settings",
+      icon: Settings,
+    },
+  ]
+
+  const tools = [
+    {
+      title: t('procrastinationAnalyzer'),
+      url: "/procrastination",
+      icon: Hourglass,
+    },
+    {
+      title: t('taskDecomposer'),
+      url: "/task-decomposer",
+      icon: Layers,
+    },
+    {
+      title: t('distractionCost'),
+      url: "/distraction-cost",
+      icon: DollarSign,
+    },
+  ]
 
   const isActive = (url: string) => {
     return url === "/" ? pathname === "/" : pathname.startsWith(url)
@@ -89,12 +91,12 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Platform</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('platform')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <Link to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
@@ -107,12 +109,12 @@ export function AppSidebar() {
         </SidebarGroup>
         
         <SidebarGroup>
-          <SidebarGroupLabel>Tools</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('tools')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {tools.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <Link to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
@@ -126,7 +128,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="p-4">
         <div className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden text-center">
-          © 2026 FocusFlow Inc.
+          {t('copyright')}
         </div>
       </SidebarFooter>
       <SidebarRail />

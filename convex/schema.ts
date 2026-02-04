@@ -15,17 +15,24 @@ export default defineSchema({
       v.literal("high"),
       v.literal("critical"),
     ),
-    status: v.union(v.literal("active"), v.literal("done")),
+    status: v.union(v.literal("active"), v.literal("done"), v.literal("overdue")),
+    resolution: v.optional(v.union(
+      v.literal("completed"),
+      v.literal("not_completed"),
+      v.null(),
+    )),
     createdAt: v.number(),
   })
     .index("by_userId_status", ["userId", "status"])
-    .index("by_userId_dueDate", ["userId", "dueDate"]),
+    .index("by_userId_dueDate", ["userId", "dueDate"])
+    .index("by_userId_status_dueDate", ["userId", "status", "dueDate"]),
   activityEvents: defineTable({
     userId: v.id("users"),
     type: v.union(v.literal("focus"), v.literal("distraction")),
     label: v.string(),
     minutes: v.number(),
     createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
     hourBucket: v.number(),
   })
     .index("by_createdAt", ["createdAt"])

@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useI18n } from "@/hooks/use-i18n"
 
 type NotificationType = "focus" | "task" | "summary" | "blocker" | "system"
 
@@ -89,6 +90,7 @@ const initialNotifications: Notification[] = [
 ]
 
 export default function NotificationsPage() {
+  const { t } = useI18n()
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications)
   const [activeTab, setActiveTab] = useState("all")
 
@@ -127,16 +129,16 @@ export default function NotificationsPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto max-w-4xl px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
+      <div className="container mx-auto max-w-4xl px-4 py-4 md:py-8">
+        <div className="mb-6 md:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Notifications</h1>
-            <p className="mt-1 text-muted-foreground">Stay updated on your productivity and tasks.</p>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{t('notifications')}</h1>
+            <p className="mt-1 text-sm md:text-base text-muted-foreground">{t('stayUpdated')}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0}>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0} className="w-full sm:w-auto">
               <Check className="mr-2 h-4 w-4" />
-              Mark all as read
+              {t('markAllRead')}
             </Button>
           </div>
         </div>
@@ -144,33 +146,33 @@ export default function NotificationsPage() {
         <div className="grid gap-6">
           <Card className="shadow-sm">
             <CardHeader className="pb-3 border-b">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-                  <TabsList className="grid w-[400px] grid-cols-3">
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    <TabsTrigger value="unread" className="relative">
-                      Unread
+                  <TabsList className="flex flex-wrap h-auto w-full md:w-auto p-1 gap-1">
+                    <TabsTrigger value="all" className="flex-1 md:flex-none min-w-[80px]">{t('all')}</TabsTrigger>
+                    <TabsTrigger value="unread" className="relative flex-1 md:flex-none min-w-[80px]">
+                      {t('unread')}
                       {unreadCount > 0 && (
                         <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full px-0 flex items-center justify-center text-[10px]">
                           {unreadCount}
                         </Badge>
                       )}
                     </TabsTrigger>
-                    <TabsTrigger value="archived">Archived</TabsTrigger>
+                    <TabsTrigger value="archived">{t('archived')}</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="h-[600px]">
+              <ScrollArea className="h-[500px] md:h-[600px]">
                 {filteredNotifications.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
                     <div className="rounded-full bg-muted p-4">
                       <Bell className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <h3 className="mt-4 text-lg font-semibold text-foreground">No notifications</h3>
+                    <h3 className="mt-4 text-lg font-semibold text-foreground">{t('noNotifications')}</h3>
                     <p className="mt-2 text-sm text-muted-foreground max-w-xs">
-                      You're all caught up! Check back later for new updates.
+                      {t('caughtUp')}
                     </p>
                   </div>
                 ) : (
@@ -212,7 +214,7 @@ export default function NotificationsPage() {
                               size="icon" 
                               className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
                               onClick={() => markAsRead(notification.id)}
-                              title="Mark as read"
+                              title={t('markAsRead')}
                             >
                               <span className="h-2 w-2 rounded-full bg-primary" />
                             </Button>
@@ -226,13 +228,13 @@ export default function NotificationsPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => markAsRead(notification.id)}>
-                                <Check className="mr-2 h-4 w-4" /> Mark as read
+                                <Check className="mr-2 h-4 w-4" /> {t('markAsRead')}
                               </DropdownMenuItem>
                               <DropdownMenuItem>
-                                <Archive className="mr-2 h-4 w-4" /> Archive
+                                <Archive className="mr-2 h-4 w-4" /> {t('archive')}
                               </DropdownMenuItem>
                               <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => deleteNotification(notification.id)}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

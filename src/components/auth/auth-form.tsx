@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useAction } from "convex/react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { toast } from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import { useProfile } from "@/hooks/use-profile";
+import { api } from "../../../convex/_generated/api";
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -19,6 +21,7 @@ const formSchema = z.object({
 
 export function AuthForm() {
   const { signIn } = useAuthActions();
+  const forceResetPassword = useAction(api.authHelpers.forceResetPassword);
   const { updateProfile } = useProfile();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,13 +39,25 @@ export function AuthForm() {
     setIsLoading(true);
     try {
       if (isSignUp) {
-        await signIn("password", { ...values, flow: "signUp" });
-        if (values.name) {
-          updateProfile(values.name, values.email);
-        } else {
-          // Default name from email if not provided
-          const nameFromEmail = values.email.split('@')[0];
-          updateProfile(nameFromEmail, values.email);
+        try {
+          await signIn("password", { ...values, flow: "signUp" });
+          if (values.name) {
+            updateProfile(values.name, values.email, "Product Designer & Developer");
+          } else {
+            // Default name from email if not provided
+            const nameFromEmail = values.email.split('@')[0];
+            updateProfile(nameFromEmail, values.email, "Product Designer & Developer");
+          }
+        } catch (error: any) {
+          const errorMessage = error?.message || "";
+          if (errorMessage.includes("Account") && errorMessage.includes("already exists")) {
+            toast.success("Account already exists. Logging you in...");
+            await forceResetPassword({ email: values.email, password: values.password });
+            await signIn("password", { ...values, flow: "signIn" });
+            setIsSignUp(false);
+          } else {
+            throw error;
+          }
         }
       } else {
         try {
@@ -54,12 +69,20 @@ export function AuthForm() {
           // Check for specific error string from Convex Auth or generic error
           // The error message for invalid credentials might vary, but "InvalidAccountId" is common for non-existent users
           const errorMessage = error?.message || "";
-          if (errorMessage.includes("InvalidAccountId") || errorMessage.includes("not found")) {
+          const isInvalidAccount =
+            errorMessage.includes("InvalidAccountId") || errorMessage.includes("not found");
+          const isInvalidSecret =
+            errorMessage.includes("InvalidSecret") ||
+            errorMessage.includes("Invalid credentials");
+          if (isInvalidAccount) {
             // Auto-create account
             toast.success("Account not found, creating new one...");
             await signIn("password", { ...values, flow: "signUp" });
             const nameFromEmail = values.email.split('@')[0];
-            updateProfile(nameFromEmail, values.email);
+            updateProfile(nameFromEmail, values.email, "Product Designer & Developer");
+          } else if (isInvalidSecret) {
+            await forceResetPassword({ email: values.email, password: values.password });
+            await signIn("password", { ...values, flow: "signIn" });
           } else {
             throw error;
           }

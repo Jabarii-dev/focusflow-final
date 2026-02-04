@@ -4,6 +4,8 @@ import { Event } from "./daily-timeline"
 
 interface UpcomingListProps {
   events: Event[]
+  onViewAll?: () => void
+  limit?: number
 }
 
 const colorMap: Record<string, string> = {
@@ -14,9 +16,10 @@ const colorMap: Record<string, string> = {
   rose: "bg-rose-500",
 }
 
-export function UpcomingList({ events }: UpcomingListProps) {
+export function UpcomingList({ events, onViewAll, limit }: UpcomingListProps) {
   // Sort events by startHour
   const sortedEvents = [...events].sort((a, b) => a.startHour - b.startHour);
+  const displayEvents = limit ? sortedEvents.slice(0, limit) : sortedEvents;
 
   return (
     <div className="space-y-3">
@@ -24,13 +27,18 @@ export function UpcomingList({ events }: UpcomingListProps) {
         <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Upcoming
         </h3>
-        <button className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors">
-          View All
-        </button>
+        {onViewAll && (
+          <button 
+            onClick={onViewAll}
+            className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            View All
+          </button>
+        )}
       </div>
       
       <div className="space-y-2">
-        {sortedEvents.map((event) => (
+        {displayEvents.map((event) => (
           <div 
             key={event.id} 
             className="group flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3 hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300"
@@ -52,7 +60,7 @@ export function UpcomingList({ events }: UpcomingListProps) {
             </div>
           </div>
         ))}
-        {sortedEvents.length === 0 && (
+        {displayEvents.length === 0 && (
            <div className="text-[10px] text-muted-foreground p-3 text-center">No upcoming events</div>
         )}
       </div>

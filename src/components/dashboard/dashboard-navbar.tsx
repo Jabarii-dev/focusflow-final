@@ -2,8 +2,11 @@ import { Bell, Globe, LayoutDashboard, PieChart, Search, Settings, Users } from 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useProfile } from "@/hooks/use-profile"
 
 export function DashboardNavbar() {
+  const { name, avatarUrl } = useProfile()
+
   return (
     <nav className="h-[70px] w-full border-b bg-card px-6 flex items-center justify-between z-50 relative">
       {/* Left: Logo */}
@@ -51,12 +54,12 @@ export function DashboardNavbar() {
 
         <div className="flex items-center gap-3 pl-2 border-l border-border/50">
           <div className="text-right hidden md:block">
-            <p className="text-sm font-medium leading-none">Aisha</p>
+            <p className="text-sm font-medium leading-none">{name}</p>
             <p className="text-xs text-muted-foreground">Admin</p>
           </div>
           <Avatar className="h-9 w-9 border-2 border-primary/20">
-            <AvatarImage src="/avatars/01.png" alt="Aisha" />
-            <AvatarFallback className="bg-primary/10 text-primary">A</AvatarFallback>
+            <AvatarImage src={avatarUrl} alt={name} className="object-cover" />
+            <AvatarFallback className="bg-primary/10 text-primary">{name.substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
         </div>
       </div>

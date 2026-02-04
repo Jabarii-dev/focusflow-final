@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { AlertCircle, CheckCircle2, Plus, X } from "lucide-react"
+import { AlertCircle, CheckCircle2, Plus, X, Check } from "lucide-react"
 import { useMutation } from "convex/react"
 import type { Id } from "../../../convex/_generated/dataModel"
 import { api } from "../../../convex/_generated/api"
@@ -33,6 +33,7 @@ type NewTaskItem = {
 export function TaskList({ tasks = [] }: { tasks?: Task[] }) {
   const createTask = useMutation(api.tasks.createTask)
   const completeTask = useMutation(api.tasks.completeTask)
+  const resolveTask = useMutation(api.tasks.resolveTask)
   const [isAdding, setIsAdding] = useState(false)
 
   const [newItem, setNewItem] = useState<NewTaskItem>({
@@ -70,6 +71,15 @@ export function TaskList({ tasks = [] }: { tasks?: Task[] }) {
     } catch (error) {
       console.error(error)
       toast.error("Failed to complete task")
+    }
+  }
+
+  const handleResolve = async (id: Id<"tasks">, resolution: "completed" | "not_completed") => {
+    try {
+      await resolveTask({ id, resolution })
+      toast.success(resolution === "completed" ? "Task completed" : "Task marked overdue")
+    } catch (error) {
+      toast.error("Failed to resolve task")
     }
   }
 
@@ -169,22 +179,24 @@ export function TaskList({ tasks = [] }: { tasks?: Task[] }) {
         ) : (
           tasks.map((task) => {
             const delay = getDelay(task.dueDate)
+            const isOverdue = task.dueDate < Date.now() && task.status === 'active'
+
             return (
               <div 
                 key={task.id}
-                className="group flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.03] transition-all duration-300"
+                className="group flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 rounded-xl border border-white/5 bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.03] transition-all duration-300"
               >
                 <div className="flex items-center gap-4">
                   <div className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-full border transition-colors duration-300 cursor-pointer hover:scale-110",
-                    delay ? "border-red-500/20 bg-red-500/5 text-red-400 group-hover:bg-red-500/10" :
+                    isOverdue ? "border-red-500/20 bg-red-500/5 text-red-400 group-hover:bg-red-500/10" :
                     task.status === "done" ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-400 group-hover:bg-emerald-500/10" :
                     "border-blue-500/20 bg-blue-500/5 text-blue-400 group-hover:bg-blue-500/10"
                   )}
-                  onClick={() => handleComplete(task.id)}
-                  title="Complete Task"
+                  onClick={() => !isOverdue && handleComplete(task.id)}
+                  title={isOverdue ? "Task Overdue" : "Complete Task"}
                   >
-                    {delay ? <AlertCircle className="size-4" /> :
+                    {isOverdue ? <AlertCircle className="size-4" /> :
                      task.status === "done" ? <CheckCircle2 className="size-4" /> :
                      <CheckCircle2 className="size-4 opacity-50 hover:opacity-100" />}
                   </div>
@@ -201,14 +213,38 @@ export function TaskList({ tasks = [] }: { tasks?: Task[] }) {
                   </div>
                 </div>
                 
-                <div className="text-right">
-                  <p className={cn(
-                    "text-xs font-medium font-mono",
-                    delay ? "text-red-400" : "text-slate-500"
-                  )}>
-                    {delay ? `+${delay}` : "On Track"}
-                  </p>
-                </div>
+                {isOverdue ? (
+                  <div className="flex items-center gap-2 self-end md:self-auto pl-12 md:pl-0">
+                    <span className="text-xs text-red-400 font-medium mr-2 hidden sm:inline">Did you complete this?</span>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleResolve(task.id, 'completed')}
+                      className="h-8 w-8 p-0 border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300"
+                      title="Yes, completed"
+                    >
+                      <Check className="size-4" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleResolve(task.id, 'not_completed')}
+                      className="h-8 w-8 p-0 border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                      title="No, not completed"
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-right pl-12 md:pl-0 self-end md:self-auto">
+                    <p className={cn(
+                      "text-xs font-medium font-mono",
+                      delay ? "text-red-400" : "text-slate-500"
+                    )}>
+                      {delay ? `+${delay}` : "On Track"}
+                    </p>
+                  </div>
+                )}
               </div>
             )
           })

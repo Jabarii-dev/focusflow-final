@@ -16,7 +16,7 @@ type TaskSummary = {
   category: string;
   dueDate: number;
   impact: "low" | "medium" | "high" | "critical";
-  status: "active" | "done";
+  status: "active" | "done" | "overdue";
   createdAt: number;
 };
 
@@ -30,7 +30,7 @@ export const createTask = mutation({
   handler: async (ctx, args): Promise<Id<"tasks">> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new Error("Please sign in to continue");
     }
 
     const now = Date.now();
@@ -41,6 +41,7 @@ export const createTask = mutation({
       dueDate: args.dueDate,
       impact: args.impact,
       status: "active",
+      resolution: null,
       createdAt: now,
     });
 
@@ -55,7 +56,7 @@ export const completeTask = mutation({
   handler: async (ctx, args): Promise<Id<"tasks">> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new Error("Please sign in to continue");
     }
 
     const task = await ctx.db.get(args.taskId);
@@ -72,12 +73,67 @@ export const completeTask = mutation({
   },
 });
 
+export const resolveTask = mutation({
+  args: {
+    id: v.id("tasks"),
+    resolution: v.union(v.literal("completed"), v.literal("not_completed")),
+  },
+  handler: async (ctx, args): Promise<Id<"tasks">> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Please sign in to continue");
+    }
+
+    const task = await ctx.db.get(args.id);
+    if (!task || task.userId !== userId) {
+      throw new Error("Task not found");
+    }
+
+    await ctx.db.patch(args.id, {
+      status: args.resolution === "completed" ? "done" : "overdue",
+      resolution: args.resolution,
+    });
+
+    return args.id;
+  },
+});
+
+export const listOverdueTasks = query({
+  args: {},
+  handler: async (ctx): Promise<TaskSummary[]> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Please sign in to continue");
+    }
+
+    const now = Date.now();
+    const tasks = await ctx.db
+      .query("tasks")
+      .withIndex("by_userId_status_dueDate", (q) =>
+        q.eq("userId", userId).eq("status", "active").lt("dueDate", now),
+      )
+      .collect();
+
+    return tasks
+      .map((task) => ({
+        id: task._id as Id<"tasks">,
+        title: task.title,
+        category: task.category,
+        dueDate: task.dueDate,
+        impact: task.impact,
+        status: task.status,
+        createdAt: task.createdAt,
+      }))
+      .sort((a, b) => a.dueDate - b.dueDate);
+  },
+});
+
 export const listActiveTasks = query({
   args: {},
   handler: async (ctx): Promise<TaskSummary[]> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new Error("Please sign in to continue");
     }
 
     const tasks = await ctx.db

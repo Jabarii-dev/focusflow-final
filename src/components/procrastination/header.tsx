@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge"
-import { LayoutDashboard } from "lucide-react"
+import { Hourglass } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface HeaderProps {
@@ -27,24 +27,22 @@ export function Header({ systemStatus = "stable", analyzingLabel = "ANALYZING" }
   }
 
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6 border-b border-white/5 pb-4">
-      <div className="space-y-2">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-            <LayoutDashboard className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-3xl md:text-4xl font-medium tracking-tight text-white">
-              FocusFlow
-            </h1>
-          </div>
+    <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-6 gap-4">
+      <div className="flex items-center gap-3 bg-slate-900/50 border border-slate-800 p-2 pr-6 rounded-xl backdrop-blur-sm">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <Hourglass className="h-5 w-5" />
         </div>
-        <p className="text-sm font-medium text-slate-400 pl-[44px] tracking-widest uppercase">
-          Procrastination Analyzer
-        </p>
+        <div>
+          <h1 className="text-lg font-medium tracking-tight text-slate-200 leading-none">
+            Procrastination Analyzer
+          </h1>
+          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-1">
+            Activity Monitor
+          </p>
+        </div>
       </div>
       
-      <div className="pl-[44px] md:pl-0 flex items-center gap-6">
+      <div className="flex items-center gap-6 pl-2 md:pl-0">
         <div className="hidden md:block text-right">
           <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">System Status</p>
           <div className="flex items-center justify-end gap-2">
