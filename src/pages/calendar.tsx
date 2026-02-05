@@ -55,6 +55,7 @@ export default function CalendarPage() {
       duration: 2,
       color: "blue",
       tags: ["High Priority", "Dev"],
+      isCompleted: false,
     },
     {
       id: 2,
@@ -65,6 +66,7 @@ export default function CalendarPage() {
       duration: 1,
       color: "emerald",
       tags: ["Personal"],
+      isCompleted: false,
     },
     {
       id: 3,
@@ -75,6 +77,7 @@ export default function CalendarPage() {
       duration: 1,
       color: "indigo",
       tags: ["Meeting"],
+      isCompleted: false,
     }
   ])
 
@@ -133,6 +136,13 @@ export default function CalendarPage() {
   }
 
   const handleCompleteSession = () => {
+    if (activeEventId) {
+      setEvents(prev => prev.map(e => 
+        e.id === activeEventId 
+          ? { ...e, isCompleted: true } 
+          : e
+      ))
+    }
     setTimerState({ isRunning: false, timeLeft: 0 })
     setActiveEventId(null)
     toast.success(t('sessionMarkedComplete'))
@@ -292,7 +302,8 @@ export default function CalendarPage() {
         startHour,
         duration,
         color: formData.color,
-        tags: [formData.tag]
+        tags: [formData.tag],
+        isCompleted: false
       }
       setEvents(prev => [...prev, event])
       toast.success(t('eventCreated'))
@@ -338,16 +349,16 @@ export default function CalendarPage() {
   // Filtered Events for Display
   const currentEvents = useMemo(() => {
     if (viewMode === 'day') {
-      return events.filter(e => isSameDay(e.date, date))
+      return events.filter(e => isSameDay(e.date, date) && !e.isCompleted)
     }
-    return events 
+    return events.filter(e => !e.isCompleted)
   }, [events, date, viewMode])
 
   // Upcoming Events (future events today or later)
   const upcomingEvents = useMemo(() => {
     const now = new Date()
     return events
-      .filter(e => e.date >= now || (isSameDay(e.date, now) && e.startHour > now.getHours()))
+      .filter(e => !e.isCompleted && (e.date >= now || (isSameDay(e.date, now) && e.startHour > now.getHours())))
       .sort((a, b) => a.date.getTime() - b.date.getTime() || a.startHour - b.startHour)
   }, [events])
 
@@ -509,9 +520,9 @@ export default function CalendarPage() {
                       onEventSelect={handleStartSession}
                      />
                    ) : (
-                     <div className="flex h-full divide-x divide-white/5 min-w-[800px]">
+                      <div className="flex h-full divide-x divide-white/5 min-w-[800px]">
                        {weekDays.map((day, i) => {
-                         const dayEvents = events.filter(e => isSameDay(e.date, day))
+                         const dayEvents = events.filter(e => isSameDay(e.date, day) && !e.isCompleted)
                          const isToday = isSameDay(day, new Date())
                          return (
                            <div key={day.toString()} className="flex-1 min-w-[120px] bg-background/20">
@@ -530,6 +541,10 @@ export default function CalendarPage() {
                                 startHour={settings.workingHours.start}
                                 endHour={settings.workingHours.end}
                                 snapInterval={settings.snapInterval}
+                                onEventUpdate={handleEventUpdate}
+                                onEventDelete={handleEventDelete}
+                                onEventEdit={handleEventEdit}
+                                onEventSelect={handleStartSession}
                               />
                              </div>
                            </div>

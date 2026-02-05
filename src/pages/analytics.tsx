@@ -43,47 +43,66 @@ import {
   FileText
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useQuery } from "convex/react"
+import { useQuery, useConvex } from "convex/react"
 import { api } from "../../convex/_generated/api"
 import { useI18n } from "@/hooks/use-i18n"
+import { toast } from "sonner"
 
 const COLORS = ['#E01E5A', '#4285F4', '#C13584', '#FF9900', '#888888', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function AnalyticsPage() {
   const { t } = useI18n()
+  const convex = useConvex()
   const [reportDays, setReportDays] = useState(7)
-  const [showReport, setShowReport] = useState(false)
+  const [weeklyReport, setWeeklyReport] = useState<any>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   const analytics = useQuery(api.analytics.getAnalyticsSummary);
-  const weeklyReport = useQuery(api.analytics.getWeeklyReport, showReport ? { days: reportDays } : "skip");
 
-  const handleGenerateReport = () => {
-    setShowReport(true)
+  const handleGenerateReport = async () => {
+    try {
+      setIsGenerating(true)
+      const report = await convex.query(api.analytics.getWeeklyReport, { days: reportDays })
+      setWeeklyReport(report)
+      toast.success("Report generated successfully")
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to generate report")
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const handleDownloadCsv = () => {
     if (!weeklyReport) return;
     
-    const headers = ["Date", "Focus Minutes", "Distraction Minutes"];
-    const rows = weeklyReport.csvRows.map(row => [
-      new Date(row.date).toLocaleDateString(),
-      row.focusMinutes,
-      row.distractionMinutes
-    ]);
-    
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.join(","))
-    ].join("\n");
-    
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `productivity_report_${reportDays}days.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const headers = ["Date", "Focus Minutes", "Distraction Minutes"];
+      const rows = weeklyReport.csvRows.map((row: any) => [
+        new Date(row.date).toLocaleDateString(),
+        row.focusMinutes,
+        row.distractionMinutes
+      ]);
+      
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row: any) => row.join(","))
+      ].join("\n");
+      
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `productivity_report_${reportDays}days.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("CSV exported successfully")
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to export CSV")
+    }
   };
 
   if (!analytics) {
@@ -139,9 +158,9 @@ export default function AnalyticsPage() {
                 <SelectItem value="30">{t('last30Days')}</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={handleGenerateReport} variant="outline" className="w-full sm:w-auto gap-2">
-              <FileText className="h-4 w-4" />
-              {t('generateReport')}
+            <Button onClick={handleGenerateReport} variant="outline" className="w-full sm:w-auto gap-2" disabled={isGenerating}>
+              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+              {isGenerating ? "Generating..." : t('generateReport')}
             </Button>
           </div>
         </div>
@@ -421,7 +440,7 @@ export default function AnalyticsPage() {
                       </TableHeader>
                       <TableBody>
                         {weeklyReport.csvRows.length > 0 ? (
-                          weeklyReport.csvRows.slice(0, 7).map((row) => (
+                          weeklyReport.csvRows.slice(0, 7).map((row: any) => (
                             <TableRow key={row.date}>
                               <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
                               <TableCell>{row.focusMinutes}</TableCell>

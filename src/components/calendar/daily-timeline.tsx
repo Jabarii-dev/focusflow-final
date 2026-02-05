@@ -26,6 +26,7 @@ export interface Event {
   duration: number // in hours
   color: "blue" | "indigo" | "violet" | "emerald" | "rose"
   tags?: string[]
+  isCompleted?: boolean
 }
 
 const colorMap = {
