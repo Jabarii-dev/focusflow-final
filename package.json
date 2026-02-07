@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node api.js && vite",
     "dev:convex": "bunx convex codegen && tsc -p convex --noEmit && bunx convex dev --once --typecheck=disable && vite",
-    "build": "vite build",
+    "build": "node api.js && vite build",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "preview": "vite preview"
