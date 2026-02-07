@@ -3,6 +3,8 @@ import path from "path";
 import react from "@vitejs/plugin-react";
 import tailwindcss from '@tailwindcss/vite'
 
+const port = Number(process.env.PORT) || 3000;
+
 export default defineConfig({
   plugins: [
     react(),
@@ -17,8 +19,12 @@ export default defineConfig({
     },
   },
   server: {
-    host: '0.0.0.0',        // Listen on all interfaces
-    allowedHosts: true,     // Allow all hosts (for E2B proxy)
-    port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
+    host: '0.0.0.0',
+    port,
+    strictPort: false,
+    allowedHosts: 'all',
+    hmr: {
+      port,
+    },
   },
 });
