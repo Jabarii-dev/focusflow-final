@@ -22,7 +22,22 @@ import { Toaster } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
 import { ThemeProvider } from '@/components/theme-provider'
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL)
+const convexUrl = import.meta.env.VITE_CONVEX_URL;
+if (!convexUrl) {
+  const root = document.getElementById('root');
+  if (root) {
+    root.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;background:#000926;color:#FBE4E3;">
+        <div style="text-align:center;max-width:480px;padding:2rem;">
+          <h1 style="font-size:1.5rem;margin-bottom:1rem;">Missing Configuration</h1>
+          <p style="opacity:0.7;">The <code>VITE_CONVEX_URL</code> environment variable is not set. Please add it to your environment and restart the dev server.</p>
+        </div>
+      </div>
+    `;
+  }
+  throw new Error('VITE_CONVEX_URL is not set');
+}
+const convex = new ConvexReactClient(convexUrl)
 
 // Handle module load failures (e.g., after deployment with stale chunks)
 window.addEventListener('vite:preloadError', (event) => {
